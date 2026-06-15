@@ -9,16 +9,16 @@
         .tab-content { display: none; padding: 20px; }
         .tab-content.active { display: block; }
         
-        /* リスト表示用 */
         .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        
-        /* 右下の＋ボタン */
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
         
-        /* フォーム */
         form { display: flex; flex-direction: column; gap: 15px; }
-        input { padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; }
-        button[type="submit"] { padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-size: 16px; }
+        input { padding: 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
+        
+        .button-group { display: flex; gap: 10px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .save-btn { background: #28a745; color: white; }
+        .back-btn { background: #6c757d; color: white; }
     </style>
 </head>
 <body>
@@ -33,9 +33,11 @@
         <h2>新規追加</h2>
         <form id="knitForm">
             <input type="text" id="title" placeholder="作品名" required>
-            <input type="date" id="date" required>
-            <button type="submit">保存する</button>
-            <button type="button" onclick="showTab('home')" style="background:#666">戻る</button>
+            <input type="date" id="date" required title="作成日を入力">
+            <div class="button-group">
+                <button type="submit" class="save-btn">保存する</button>
+                <button type="button" class="back-btn" onclick="showTab('home')">戻る</button>
+            </div>
         </form>
     </section>
 
@@ -47,7 +49,7 @@
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
             listDiv.innerHTML = data.length ? data.map(item => `
                 <div class="card">
-                    <strong>${item.title}</strong><br><small>開始日: ${item.date}</small>
+                    <strong>${item.title}</strong><br><small>作成日: ${item.date}</small>
                 </div>
             `).join('') : '<p>まだ記録がありません</p>';
         }
