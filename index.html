@@ -34,7 +34,8 @@
         <h2 id="formTitle">新規追加</h2>
         <form id="knitForm">
             <input type="text" id="title" placeholder="作品名" required>
-            <input type="date" id="date" required>
+            <label>開始日</label><input type="date" id="startDate" required>
+            <label>完了日（未完了の場合は空欄）</label><input type="date" id="endDate">
             <input type="text" id="materials" placeholder="使用材料">
             <input type="file" id="photo" accept="image/*">
             <div class="button-group">
@@ -51,25 +52,33 @@
 
         function loadData() {
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
-            listDiv.innerHTML = data.length ? data.map((item, index) => `
+            listDiv.innerHTML = data.length ? data.map((item, index) => {
+                let duration = "制作中";
+                if (item.endDate) {
+                    const diff = (new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24);
+                    duration = `制作期間: ${diff}日`;
+                }
+                return `
                 <div class="card">
                     <strong>${item.title}</strong><br>
-                    <small>作成日: ${item.date}</small><br>
+                    <small>開始: ${item.startDate} ${item.endDate ? ' / 完了: ' + item.endDate : ''}</small><br>
+                    <small><b>${duration}</b></small><br>
                     <small>材料: ${item.materials}</small>
                     ${item.photo ? `<img src="${item.photo}">` : ''}
                     <div class="btn-group-card">
                         <button class="edit-btn" onclick="editItem(${index})">編集</button>
                         <button class="delete-btn" onclick="deleteItem(${index})">削除</button>
                     </div>
-                </div>
-            `).join('') : '<p>まだ記録がありません</p>';
+                </div>`;
+            }).join('') : '<p>まだ記録がありません</p>';
         }
 
         function editItem(index) {
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
             const item = data[index];
             document.getElementById('title').value = item.title;
-            document.getElementById('date').value = item.date;
+            document.getElementById('startDate').value = item.startDate;
+            document.getElementById('endDate').value = item.endDate || '';
             document.getElementById('materials').value = item.materials;
             editIndex = index;
             document.getElementById('formTitle').innerText = "編集";
@@ -121,7 +130,8 @@
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
             const newItem = {
                 title: document.getElementById('title').value,
-                date: document.getElementById('date').value,
+                startDate: document.getElementById('startDate').value,
+                endDate: document.getElementById('endDate').value,
                 materials: document.getElementById('materials').value,
                 photo: photoData
             };
