@@ -10,6 +10,9 @@
         .tab-content.active { display: block; }
         .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .card img { width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
+        .btn-group-card { margin-top: 10px; display: flex; gap: 5px; }
+        .edit-btn { background: #ffc107; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .delete-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
         form { display: flex; flex-direction: column; gap: 12px; }
         input { padding: 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
@@ -24,11 +27,11 @@
     <section id="home" class="tab-content active">
         <h2>作品一覧</h2>
         <div id="list"></div>
-        <button class="fab" onclick="showTab('add')">+</button>
+        <button class="fab" onclick="resetForm()">+</button>
     </section>
 
     <section id="add" class="tab-content">
-        <h2>新規追加</h2>
+        <h2 id="formTitle">新規追加</h2>
         <form id="knitForm">
             <input type="text" id="title" placeholder="作品名" required>
             <input type="date" id="date" required>
@@ -44,17 +47,49 @@
     <script>
         const form = document.getElementById('knitForm');
         const listDiv = document.getElementById('list');
+        let editIndex = -1;
 
         function loadData() {
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
-            listDiv.innerHTML = data.length ? data.map(item => `
+            listDiv.innerHTML = data.length ? data.map((item, index) => `
                 <div class="card">
                     <strong>${item.title}</strong><br>
                     <small>作成日: ${item.date}</small><br>
                     <small>材料: ${item.materials}</small>
-                    ${item.photo ? `<img src="${item.photo}" alt="作品写真">` : ''}
+                    ${item.photo ? `<img src="${item.photo}">` : ''}
+                    <div class="btn-group-card">
+                        <button class="edit-btn" onclick="editItem(${index})">編集</button>
+                        <button class="delete-btn" onclick="deleteItem(${index})">削除</button>
+                    </div>
                 </div>
             `).join('') : '<p>まだ記録がありません</p>';
+        }
+
+        function editItem(index) {
+            const data = JSON.parse(localStorage.getItem('knits') || '[]');
+            const item = data[index];
+            document.getElementById('title').value = item.title;
+            document.getElementById('date').value = item.date;
+            document.getElementById('materials').value = item.materials;
+            editIndex = index;
+            document.getElementById('formTitle').innerText = "編集";
+            showTab('add');
+        }
+
+        function deleteItem(index) {
+            if (confirm("本当に削除しますか？")) {
+                const data = JSON.parse(localStorage.getItem('knits') || '[]');
+                data.splice(index, 1);
+                localStorage.setItem('knits', JSON.stringify(data));
+                loadData();
+            }
+        }
+
+        function resetForm() {
+            editIndex = -1;
+            document.getElementById('formTitle').innerText = "新規追加";
+            form.reset();
+            showTab('add');
         }
 
         form.addEventListener('submit', (e) => {
@@ -62,21 +97,39 @@
             const file = document.getElementById('photo').files[0];
             if (file) {
                 const reader = new FileReader();
-                reader.onload = (e) => save(e.target.result);
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const MAX_WIDTH = 800;
+                        const scale = MAX_WIDTH / img.width;
+                        canvas.width = MAX_WIDTH;
+                        canvas.height = img.height * scale;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        save(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.src = e.target.result;
+                };
                 reader.readAsDataURL(file);
             } else {
-                save(null);
+                save(editIndex !== -1 ? JSON.parse(localStorage.getItem('knits'))[editIndex].photo : null);
             }
         });
 
         function save(photoData) {
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
-            data.push({
+            const newItem = {
                 title: document.getElementById('title').value,
                 date: document.getElementById('date').value,
                 materials: document.getElementById('materials').value,
                 photo: photoData
-            });
+            };
+            if (editIndex !== -1) {
+                data[editIndex] = newItem;
+            } else {
+                data.push(newItem);
+            }
             localStorage.setItem('knits', JSON.stringify(data));
             form.reset();
             loadData();
