@@ -2,16 +2,23 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>編み物管理</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>編み物記録</title>
     <style>
-        body { margin: 0; padding-bottom: 70px; font-family: sans-serif; }
+        body { margin: 0; font-family: sans-serif; background: #f4f4f9; padding-bottom: 20px; }
         .tab-content { display: none; padding: 20px; }
         .tab-content.active { display: block; }
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; height: 60px; display: flex; justify-content: space-around; background: #eee; border-top: 1px solid #ccc; }
-        .bottom-nav button { flex: 1; border: none; background: none; font-size: 16px; }
-        form { display: flex; flex-direction: column; gap: 10px; }
-        .card { border: 1px solid #ddd; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+        
+        /* リスト表示用 */
+        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* 右下の＋ボタン */
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
+        
+        /* フォーム */
+        form { display: flex; flex-direction: column; gap: 15px; }
+        input { padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; }
+        button[type="submit"] { padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -19,6 +26,7 @@
     <section id="home" class="tab-content active">
         <h2>作品一覧</h2>
         <div id="list"></div>
+        <button class="fab" onclick="showTab('add')">+</button>
     </section>
 
     <section id="add" class="tab-content">
@@ -27,34 +35,27 @@
             <input type="text" id="title" placeholder="作品名" required>
             <input type="date" id="date" required>
             <button type="submit">保存する</button>
+            <button type="button" onclick="showTab('home')" style="background:#666">戻る</button>
         </form>
     </section>
-
-    <nav class="bottom-nav">
-        <button onclick="showTab('home')">一覧</button>
-        <button onclick="showTab('add')">追加</button>
-    </nav>
 
     <script>
         const form = document.getElementById('knitForm');
         const listDiv = document.getElementById('list');
 
-        // 保存されたデータを読み込んで表示
         function loadData() {
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
-            listDiv.innerHTML = data.map(item => `
+            listDiv.innerHTML = data.length ? data.map(item => `
                 <div class="card">
-                    <strong>${item.title}</strong><br>開始日: ${item.date}
+                    <strong>${item.title}</strong><br><small>開始日: ${item.date}</small>
                 </div>
-            `).join('');
+            `).join('') : '<p>まだ記録がありません</p>';
         }
 
-        // 保存処理
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const newData = { title: document.getElementById('title').value, date: document.getElementById('date').value };
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
-            data.push(newData);
+            data.push({ title: document.getElementById('title').value, date: document.getElementById('date').value });
             localStorage.setItem('knits', JSON.stringify(data));
             form.reset();
             loadData();
@@ -66,7 +67,7 @@
             document.getElementById(id).classList.add('active');
         }
 
-        loadData(); // 初回読み込み
+        loadData();
     </script>
 </body>
 </html>
