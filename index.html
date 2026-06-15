@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>編み物管理アプリ</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main>
+        <section id="home" class="tab-content active">
+            <h2>作品一覧</h2>
+            <div id="list">ここに作品が並びます</div>
+        </section>
+        <section id="add" class="tab-content">
+            <h2>新規追加</h2>
+            <form>
+                <input type="text" placeholder="作品名">
+                <input type="date">
+                <button type="button">保存する</button>
+            </form>
+        </section>
+        <section id="settings" class="tab-content">
+            <h2>設定</h2>
+            <p>データのエクスポートなど</p>
+        </section>
+    </main>
+
+    <nav class="bottom-nav">
+        <button onclick="showTab('home')">一覧</button>
+        <button onclick="showTab('add')">追加</button>
+        <button onclick="showTab('settings')">設定</button>
+    </nav>
+    <script src="script.js"></script>
+</body>
+</html>
