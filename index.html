@@ -10,12 +10,10 @@
         .tab-content.active { display: block; }
         
         .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .card img { width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
-        
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
         
         form { display: flex; flex-direction: column; gap: 12px; }
-        input, textarea { padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
+        input { padding: 15px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
         
         .button-group { display: flex; gap: 10px; margin-top: 10px; }
         button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
@@ -35,9 +33,8 @@
         <h2>新規追加</h2>
         <form id="knitForm">
             <input type="text" id="title" placeholder="作品名" required>
-            <input type="date" id="date" required>
-            <input type="text" id="materials" placeholder="使用材料（糸の種類、玉数など）">
-            <input type="file" id="photo" accept="image/*">
+            <input type="date" id="date" required title="作成日を入力">
+            <input type="text" id="materials" placeholder="使用材料">
             <div class="button-group">
                 <button type="submit" class="save-btn">保存する</button>
                 <button type="button" class="back-btn" onclick="showTab('home')">戻る</button>
@@ -56,37 +53,23 @@
                     <strong>${item.title}</strong><br>
                     <small>作成日: ${item.date}</small><br>
                     <small>材料: ${item.materials}</small>
-                    ${item.photo ? `<img src="${item.photo}">` : ''}
                 </div>
             `).join('') : '<p>まだ記録がありません</p>';
         }
 
         form.addEventListener('submit', (e) => {
             e.preventDefault();
-            const file = document.getElementById('photo').files[0];
-            const reader = new FileReader();
-
-            if (file) {
-                reader.onload = (e) => save(e.target.result);
-                reader.readAsDataURL(file);
-            } else {
-                save(null);
-            }
-        });
-
-        function save(photo) {
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
             data.push({
                 title: document.getElementById('title').value,
                 date: document.getElementById('date').value,
-                materials: document.getElementById('materials').value,
-                photo: photo
+                materials: document.getElementById('materials').value
             });
             localStorage.setItem('knits', JSON.stringify(data));
             form.reset();
             loadData();
             showTab('home');
-        }
+        });
 
         function showTab(id) {
             document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
