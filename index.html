@@ -16,7 +16,8 @@
         .delete-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
         form { display: flex; flex-direction: column; gap: 10px; }
-        input, select { padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
+        input, select, textarea { padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
+        textarea { height: 80px; }
         .button-group { display: flex; gap: 10px; margin-top: 10px; }
         button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
         .save-btn { background: #28a745; color: white; }
@@ -42,9 +43,11 @@
                 <option value="バッグ">バッグ</option>
                 <option value="その他">その他</option>
             </select>
+            <input type="text" id="purpose" placeholder="使用目的（例：自分用、プレゼント）">
             <label>開始日</label><input type="date" id="startDate" required>
             <label>完了日</label><input type="date" id="endDate">
             <input type="text" id="materials" placeholder="使用材料">
+            <textarea id="memo" placeholder="メモ"></textarea>
             <input type="file" id="photo" accept="image/*">
             <div class="button-group">
                 <button type="submit" class="save-btn">保存する</button>
@@ -61,25 +64,26 @@
 
         function loadData() {
             const data = JSON.parse(localStorage.getItem('knits') || '[]');
-            
-            // 集計処理
             const now = new Date();
             const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
             const total = data.length;
             const thisMonthDone = data.filter(i => i.endDate && i.endDate.startsWith(thisMonth)).length;
-            statsDiv.innerHTML = `合計作品数: ${total}点 / 今月完成: ${thisMonthDone}点`;
+            statsDiv.innerHTML = `合計: ${total}点 / 今月完成: ${thisMonthDone}点`;
 
             listDiv.innerHTML = data.length ? data.map((item, index) => {
                 let duration = "制作中";
                 if (item.endDate) {
                     const diff = Math.floor((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
-                    duration = `制作期間: ${diff}日`;
+                    duration = `期間: ${diff}日`;
                 }
                 return `
                 <div class="card">
                     <strong>${item.title}</strong> [${item.category}]<br>
+                    <small>目的: ${item.purpose || '-'}</small><br>
                     <small>開始: ${item.startDate} ${item.endDate ? ' / 完了: ' + item.endDate : ''}</small><br>
                     <small><b>${duration}</b></small><br>
+                    <small>材料: ${item.materials}</small><br>
+                    <small>メモ: ${item.memo || '-'}</small>
                     ${item.photo ? `<img src="${item.photo}">` : ''}
                     <div class="btn-group-card">
                         <button class="edit-btn" onclick="editItem(${index})">編集</button>
@@ -94,9 +98,11 @@
             const item = data[index];
             document.getElementById('title').value = item.title;
             document.getElementById('category').value = item.category;
+            document.getElementById('purpose').value = item.purpose || '';
             document.getElementById('startDate').value = item.startDate;
             document.getElementById('endDate').value = item.endDate || '';
-            document.getElementById('materials').value = item.materials;
+            document.getElementById('materials').value = item.materials || '';
+            document.getElementById('memo').value = item.memo || '';
             editIndex = index;
             document.getElementById('formTitle').innerText = "編集";
             showTab('add');
@@ -143,9 +149,11 @@
             const newItem = {
                 title: document.getElementById('title').value,
                 category: document.getElementById('category').value,
+                purpose: document.getElementById('purpose').value,
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
-                materials: document.getElementById('materials。').value,
+                materials: document.getElementById('materials').value,
+                memo: document.getElementById('memo').value,
                 photo: photoData
             };
             if (editIndex !== -1) { data[editIndex] = newItem; } else { data.push(newItem); }
