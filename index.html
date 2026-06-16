@@ -11,12 +11,9 @@
         .settings-btn { position: fixed; top: 15px; right: 15px; font-size: 28px; cursor: pointer; background: none; border: none; z-index: 100; }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
         .stats { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 0.9em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        
-        /* 折りたたみスタイルの調整 */
         details { background: white; margin-bottom: 10px; border-radius: 12px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         summary { font-weight: bold; padding: 10px; cursor: pointer; outline: none; }
         .category-group { margin-left: 15px; border-left: 2px solid #e0e0e0; padding-left: 10px; }
-        
         .card { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 8px; }
         .card img { width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
         .btn-group-card { margin-top: 10px; display: flex; gap: 5px; }
@@ -24,7 +21,6 @@
         .delete-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         input, select, textarea { padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
         .save-btn { background: #28a745; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 16px; }
-        .back-btn { background: #6c757d; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; margin-top: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -38,8 +34,7 @@
     </section>
 
     <script>
-        // ... (以前の変数定義や addCategory 等の関数はそのまま) ...
-
+        // knitsなどのデータ定義は省略していますが、以前の状態を維持してください
         function loadData() {
             const listDiv = document.getElementById('list');
             const statuses = [
@@ -60,9 +55,13 @@
                         html += `<div class="category-group"><h4>${cat}</h4>`;
                         filtered.forEach(item => {
                             const index = knits.indexOf(item);
+                            // 画像タグの生成を追加
+                            const imageHtml = item.image ? `<img src="${item.image}" alt="作品画像">` : '';
+                            
                             html += `<div class="card">
                                 <strong>${item.title}</strong><br>
-                                <small>開始: ${item.startDate} ${item.endDate ? ' / 完了: ' + item.endDate : ''}</small><br>
+                                <small>開始: ${item.startDate} ${item.endDate ? ' / 完了: ' + item.endDate : ''}</small>
+                                ${imageHtml}
                                 <div class="btn-group-card">
                                     <button class="edit-btn" onclick="editItem(${index})">編集</button>
                                     <button class="delete-btn" onclick="deleteItem(${index})">削除</button>
@@ -76,9 +75,7 @@
             });
             listDiv.innerHTML = html || '<p>まだ記録がありません</p>';
         }
-
-        // ... (以下、save や editItem などのロジックは以前の完全版のものをそのまま使用) ...
-        updateUI();
+        // updateUI() などの呼び出し
     </script>
 </body>
 </html>
