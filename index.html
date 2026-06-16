@@ -8,25 +8,24 @@
         body { margin: 0; font-family: sans-serif; background: #f4f4f9; padding-bottom: 20px; }
         .tab-content { display: none; padding: 20px; }
         .tab-content.active { display: block; }
+        .settings-btn { position: fixed; top: 15px; right: 15px; font-size: 28px; cursor: pointer; background: none; border: none; z-index: 100; }
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
         .stats { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 0.9em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .card img { width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
         .btn-group-card { margin-top: 10px; display: flex; gap: 5px; }
         .edit-btn { background: #ffc107; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .delete-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
-        form { display: flex; flex-direction: column; gap: 10px; }
         input, select, textarea { padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
         textarea { height: 80px; }
-        .button-group { display: flex; gap: 10px; margin-top: 10px; }
-        button { flex: 1; padding: 15px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
-        .save-btn { background: #28a745; color: white; }
-        .back-btn { background: #6c757d; color: white; }
+        .save-btn { background: #28a745; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 16px; }
+        .back-btn { background: #6c757d; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; margin-top: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
 
     <section id="home" class="tab-content active">
+        <button class="settings-btn" onclick="showTab('config')">⚙️</button>
         <h2>作品一覧</h2>
         <div id="stats" class="stats"></div>
         <div id="list"></div>
@@ -37,40 +36,56 @@
         <h2 id="formTitle">新規追加</h2>
         <form id="knitForm">
             <input type="text" id="title" placeholder="作品名" required>
-            <select id="category">
-                <option value="小物">小物</option>
-                <option value="ウェア">ウェア</option>
-                <option value="バッグ">バッグ</option>
-                <option value="その他">その他</option>
-            </select>
-            <input type="text" id="purpose" placeholder="使用目的（例：自分用、プレゼント）">
+            <select id="categorySelect"></select>
+            <input type="text" id="purpose" placeholder="使用目的">
             <label>開始日</label><input type="date" id="startDate" required>
             <label>完了日</label><input type="date" id="endDate">
             <input type="text" id="materials" placeholder="使用材料">
             <textarea id="memo" placeholder="メモ"></textarea>
             <input type="file" id="photo" accept="image/*">
-            <div class="button-group">
-                <button type="submit" class="save-btn">保存する</button>
-                <button type="button" class="back-btn" onclick="showTab('home')">戻る</button>
-            </div>
+            <button type="submit" class="save-btn">保存する</button>
+            <button type="button" class="back-btn" onclick="showTab('home')">戻る</button>
         </form>
     </section>
 
+    <section id="config" class="tab-content">
+        <h2>カテゴリー設定</h2>
+        <div style="display:flex; gap:5px; margin-bottom:20px;">
+            <input type="text" id="newCat" placeholder="新カテゴリー名">
+            <button onclick="addCategory()">追加</button>
+        </div>
+        <ul id="catList"></ul>
+        <button class="back-btn" onclick="showTab('home')">一覧に戻る</button>
+    </section>
+
     <script>
-        const form = document.getElementById('knitForm');
-        const listDiv = document.getElementById('list');
-        const statsDiv = document.getElementById('stats');
+        let knits = JSON.parse(localStorage.getItem('knits') || '[]');
+        let categories = JSON.parse(localStorage.getItem('categories') || '["小物", "ウェア", "バッグ"]');
         let editIndex = -1;
 
+        function updateUI() {
+            const select = document.getElementById('categorySelect');
+            select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('catList').innerHTML = categories.map((c, i) => 
+                `<li>${c} <button onclick="deleteCategory(${i})">削除</button></li>`).join('');
+            loadData();
+        }
+
+        function addCategory() {
+            const val = document.getElementById('newCat').value;
+            if(val) { categories.push(val); localStorage.setItem('categories', JSON.stringify(categories)); updateUI(); document.getElementById('newCat').value=''; }
+        }
+
+        function deleteCategory(i) { categories.splice(i, 1); localStorage.setItem('categories', JSON.stringify(categories)); updateUI(); }
+
         function loadData() {
-            const data = JSON.parse(localStorage.getItem('knits') || '[]');
             const now = new Date();
             const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            const total = data.length;
-            const thisMonthDone = data.filter(i => i.endDate && i.endDate.startsWith(thisMonth)).length;
-            statsDiv.innerHTML = `合計: ${total}点 / 今月完成: ${thisMonthDone}点`;
+            const total = knits.length;
+            const thisMonthDone = knits.filter(i => i.endDate && i.endDate.startsWith(thisMonth)).length;
+            document.getElementById('stats').innerHTML = `合計: ${total}点 / 今月完成: ${thisMonthDone}点`;
 
-            listDiv.innerHTML = data.length ? data.map((item, index) => {
+            document.getElementById('list').innerHTML = knits.length ? knits.map((item, index) => {
                 let duration = "制作中";
                 if (item.endDate) {
                     const diff = Math.floor((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
@@ -94,10 +109,9 @@
         }
 
         function editItem(index) {
-            const data = JSON.parse(localStorage.getItem('knits') || '[]');
-            const item = data[index];
+            const item = knits[index];
             document.getElementById('title').value = item.title;
-            document.getElementById('category').value = item.category;
+            document.getElementById('categorySelect').value = item.category;
             document.getElementById('purpose').value = item.purpose || '';
             document.getElementById('startDate').value = item.startDate;
             document.getElementById('endDate').value = item.endDate || '';
@@ -110,16 +124,15 @@
 
         function deleteItem(index) {
             if (confirm("本当に削除しますか？")) {
-                const data = JSON.parse(localStorage.getItem('knits') || '[]');
-                data.splice(index, 1);
-                localStorage.setItem('knits', JSON.stringify(data));
+                knits.splice(index, 1);
+                localStorage.setItem('knits', JSON.stringify(knits));
                 loadData();
             }
         }
 
-        function resetForm() { editIndex = -1; document.getElementById('formTitle').innerText = "新規追加"; form.reset(); showTab('add'); }
+        function resetForm() { editIndex = -1; document.getElementById('formTitle').innerText = "新規追加"; document.getElementById('knitForm').reset(); showTab('add'); }
 
-        form.addEventListener('submit', (e) => {
+        document.getElementById('knitForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const file = document.getElementById('photo').files[0];
             if (file) {
@@ -128,27 +141,23 @@
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800;
-                        const scale = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * scale;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const scale = 800 / img.width;
+                        canvas.width = 800; canvas.height = img.height * scale;
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                         save(canvas.toDataURL('image/jpeg', 0.7));
                     };
                     img.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             } else {
-                save(editIndex !== -1 ? JSON.parse(localStorage.getItem('knits'))[editIndex].photo : null);
+                save(editIndex !== -1 ? knits[editIndex].photo : null);
             }
         });
 
         function save(photoData) {
-            const data = JSON.parse(localStorage.getItem('knits') || '[]');
             const newItem = {
                 title: document.getElementById('title').value,
-                category: document.getElementById('category').value,
+                category: document.getElementById('categorySelect').value,
                 purpose: document.getElementById('purpose').value,
                 startDate: document.getElementById('startDate').value,
                 endDate: document.getElementById('endDate').value,
@@ -156,15 +165,15 @@
                 memo: document.getElementById('memo').value,
                 photo: photoData
             };
-            if (editIndex !== -1) { data[editIndex] = newItem; } else { data.push(newItem); }
-            localStorage.setItem('knits', JSON.stringify(data));
-            form.reset();
+            if (editIndex !== -1) { knits[editIndex] = newItem; } else { knits.push(newItem); }
+            localStorage.setItem('knits', JSON.stringify(knits));
+            document.getElementById('knitForm').reset();
             loadData();
             showTab('home');
         }
 
         function showTab(id) { document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-        loadData();
+        updateUI();
     </script>
 </body>
 </html>
