@@ -11,13 +11,13 @@
         .settings-btn { position: fixed; top: 15px; right: 15px; font-size: 28px; cursor: pointer; background: none; border: none; z-index: 100; }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
         .stats { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 0.9em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        h3.category-title { margin-top: 25px; padding-bottom: 5px; border-bottom: 2px solid #007bff; }
         .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .card img { width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
         .btn-group-card { margin-top: 10px; display: flex; gap: 5px; }
         .edit-btn { background: #ffc107; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         .delete-btn { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
         input, select, textarea { padding: 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 8px; width: 100%; box-sizing: border-box; }
-        textarea { height: 80px; }
         .save-btn { background: #28a745; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; font-size: 16px; }
         .back-btn { background: #6c757d; color: white; padding: 15px; border: none; border-radius: 8px; width: 100%; margin-top: 10px; font-size: 16px; }
     </style>
@@ -64,10 +64,8 @@
         let editIndex = -1;
 
         function updateUI() {
-            const select = document.getElementById('categorySelect');
-            select.innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('catList').innerHTML = categories.map((c, i) => 
-                `<li>${c} <button onclick="deleteCategory(${i})">削除</button></li>`).join('');
+            document.getElementById('categorySelect').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('catList').innerHTML = categories.map((c, i) => `<li>${c} <button onclick="deleteCategory(${i})">削除</button></li>`).join('');
             loadData();
         }
 
@@ -81,31 +79,34 @@
         function loadData() {
             const now = new Date();
             const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            const total = knits.length;
-            const thisMonthDone = knits.filter(i => i.endDate && i.endDate.startsWith(thisMonth)).length;
-            document.getElementById('stats').innerHTML = `合計: ${total}点 / 今月完成: ${thisMonthDone}点`;
+            document.getElementById('stats').innerHTML = `合計: ${knits.length}点 / 今月完成: ${knits.filter(i => i.endDate && i.endDate.startsWith(thisMonth)).length}点`;
 
-            document.getElementById('list').innerHTML = knits.length ? knits.map((item, index) => {
-                let duration = "制作中";
-                if (item.endDate) {
-                    const diff = Math.floor((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24));
-                    duration = `期間: ${diff}日`;
+            let html = "";
+            categories.forEach(cat => {
+                const filtered = knits.filter(k => k.category === cat);
+                if (filtered.length > 0) {
+                    html += `<h3 class="category-title">${cat}</h3>`;
+                    filtered.forEach(item => {
+                        const index = knits.indexOf(item);
+                        let duration = item.endDate ? `期間: ${Math.floor((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24))}日` : "制作中";
+                        html += `
+                        <div class="card">
+                            <strong>${item.title}</strong><br>
+                            <small>目的: ${item.purpose || '-'}</small><br>
+                            <small>開始: ${item.startDate} ${item.endDate ? ' / 完了: ' + item.endDate : ''}</small><br>
+                            <small><b>${duration}</b></small><br>
+                            <small>材料: ${item.materials}</small><br>
+                            <small>メモ: ${item.memo || '-'}</small>
+                            ${item.photo ? `<img src="${item.photo}">` : ''}
+                            <div class="btn-group-card">
+                                <button class="edit-btn" onclick="editItem(${index})">編集</button>
+                                <button class="delete-btn" onclick="deleteItem(${index})">削除</button>
+                            </div>
+                        </div>`;
+                    });
                 }
-                return `
-                <div class="card">
-                    <strong>${item.title}</strong> [${item.category}]<br>
-                    <small>目的: ${item.purpose || '-'}</small><br>
-                    <small>開始: ${item.startDate} ${item.endDate ? ' / 完了: ' + item.endDate : ''}</small><br>
-                    <small><b>${duration}</b></small><br>
-                    <small>材料: ${item.materials}</small><br>
-                    <small>メモ: ${item.memo || '-'}</small>
-                    ${item.photo ? `<img src="${item.photo}">` : ''}
-                    <div class="btn-group-card">
-                        <button class="edit-btn" onclick="editItem(${index})">編集</button>
-                        <button class="delete-btn" onclick="deleteItem(${index})">削除</button>
-                    </div>
-                </div>`;
-            }).join('') : '<p>まだ記録がありません</p>';
+            });
+            document.getElementById('list').innerHTML = html || '<p>まだ記録がありません</p>';
         }
 
         function editItem(index) {
