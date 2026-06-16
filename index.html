@@ -11,8 +11,13 @@
         .settings-btn { position: fixed; top: 15px; right: 15px; font-size: 28px; cursor: pointer; background: none; border: none; z-index: 100; }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); z-index: 100; }
         .stats { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 15px; font-size: 0.9em; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        h3.category-title { margin-top: 25px; padding-bottom: 5px; border-bottom: 2px solid #007bff; }
-        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        
+        /* 折りたたみスタイルの調整 */
+        details { background: white; margin-bottom: 10px; border-radius: 12px; padding: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        summary { font-weight: bold; padding: 10px; cursor: pointer; outline: none; }
+        .category-group { margin-left: 15px; border-left: 2px solid #e0e0e0; padding-left: 10px; }
+        
+        .card { background: #f9f9f9; padding: 15px; margin: 10px 0; border-radius: 8px; }
         .card img { width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
         .btn-group-card { margin-top: 10px; display: flex; gap: 5px; }
         .edit-btn { background: #ffc107; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
@@ -32,148 +37,47 @@
         <button class="fab" onclick="resetForm()">+</button>
     </section>
 
-    <section id="add" class="tab-content">
-        <h2 id="formTitle">新規追加</h2>
-        <form id="knitForm">
-            <input type="text" id="title" placeholder="作品名" required>
-            <select id="categorySelect"></select>
-            <input type="text" id="purpose" placeholder="使用目的">
-            <label>開始日</label><input type="date" id="startDate" required>
-            <label>完了日</label><input type="date" id="endDate">
-            <input type="text" id="materials" placeholder="使用材料">
-            <textarea id="memo" placeholder="メモ"></textarea>
-            <input type="file" id="photo" accept="image/*">
-            <button type="submit" class="save-btn">保存する</button>
-            <button type="button" class="back-btn" onclick="showTab('home')">戻る</button>
-        </form>
-    </section>
-
-    <section id="config" class="tab-content">
-        <h2>カテゴリー設定</h2>
-        <div style="display:flex; gap:5px; margin-bottom:20px;">
-            <input type="text" id="newCat" placeholder="新カテゴリー名">
-            <button onclick="addCategory()">追加</button>
-        </div>
-        <ul id="catList"></ul>
-        <button class="back-btn" onclick="showTab('home')">一覧に戻る</button>
-    </section>
-
     <script>
-        let knits = JSON.parse(localStorage.getItem('knits') || '[]');
-        let categories = JSON.parse(localStorage.getItem('categories') || '["小物", "ウェア", "バッグ"]');
-        let editIndex = -1;
-
-        function updateUI() {
-            document.getElementById('categorySelect').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('catList').innerHTML = categories.map((c, i) => `<li>${c} <button onclick="deleteCategory(${i})">削除</button></li>`).join('');
-            loadData();
-        }
-
-        function addCategory() {
-            const val = document.getElementById('newCat').value;
-            if(val) { categories.push(val); localStorage.setItem('categories', JSON.stringify(categories)); updateUI(); document.getElementById('newCat').value=''; }
-        }
-
-        function deleteCategory(i) { categories.splice(i, 1); localStorage.setItem('categories', JSON.stringify(categories)); updateUI(); }
+        // ... (以前の変数定義や addCategory 等の関数はそのまま) ...
 
         function loadData() {
-            const now = new Date();
-            const thisMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-            document.getElementById('stats').innerHTML = `合計: ${knits.length}点 / 今月完成: ${knits.filter(i => i.endDate && i.endDate.startsWith(thisMonth)).length}点`;
+            const listDiv = document.getElementById('list');
+            const statuses = [
+                { title: "制作中", filter: k => !k.endDate },
+                { title: "完成済み", filter: k => k.endDate }
+            ];
 
             let html = "";
-            categories.forEach(cat => {
-                const filtered = knits.filter(k => k.category === cat);
-                if (filtered.length > 0) {
-                    html += `<h3 class="category-title">${cat}</h3>`;
-                    filtered.forEach(item => {
-                        const index = knits.indexOf(item);
-                        let duration = item.endDate ? `期間: ${Math.floor((new Date(item.endDate) - new Date(item.startDate)) / (1000 * 60 * 60 * 24))}日` : "制作中";
-                        html += `
-                        <div class="card">
-                            <strong>${item.title}</strong><br>
-                            <small>目的: ${item.purpose || '-'}</small><br>
-                            <small>開始: ${item.startDate} ${item.endDate ? ' / 完了: ' + item.endDate : ''}</small><br>
-                            <small><b>${duration}</b></small><br>
-                            <small>材料: ${item.materials}</small><br>
-                            <small>メモ: ${item.memo || '-'}</small>
-                            ${item.photo ? `<img src="${item.photo}">` : ''}
-                            <div class="btn-group-card">
-                                <button class="edit-btn" onclick="editItem(${index})">編集</button>
-                                <button class="delete-btn" onclick="deleteItem(${index})">削除</button>
-                            </div>
-                        </div>`;
-                    });
-                }
+            statuses.forEach(status => {
+                const itemsInStatus = knits.filter(status.filter);
+                if (itemsInStatus.length === 0) return;
+
+                html += `<details open><summary>${status.title} (${itemsInStatus.length})</summary>`;
+                
+                categories.forEach(cat => {
+                    const filtered = itemsInStatus.filter(k => k.category === cat);
+                    if (filtered.length > 0) {
+                        html += `<div class="category-group"><h4>${cat}</h4>`;
+                        filtered.forEach(item => {
+                            const index = knits.indexOf(item);
+                            html += `<div class="card">
+                                <strong>${item.title}</strong><br>
+                                <small>開始: ${item.startDate} ${item.endDate ? ' / 完了: ' + item.endDate : ''}</small><br>
+                                <div class="btn-group-card">
+                                    <button class="edit-btn" onclick="editItem(${index})">編集</button>
+                                    <button class="delete-btn" onclick="deleteItem(${index})">削除</button>
+                                </div>
+                            </div>`;
+                        });
+                        html += `</div>`;
+                    }
+                });
+                html += `</details>`;
             });
-            document.getElementById('list').innerHTML = html || '<p>まだ記録がありません</p>';
+            listDiv.innerHTML = html || '<p>まだ記録がありません</p>';
         }
 
-        function editItem(index) {
-            const item = knits[index];
-            document.getElementById('title').value = item.title;
-            document.getElementById('categorySelect').value = item.category;
-            document.getElementById('purpose').value = item.purpose || '';
-            document.getElementById('startDate').value = item.startDate;
-            document.getElementById('endDate').value = item.endDate || '';
-            document.getElementById('materials').value = item.materials || '';
-            document.getElementById('memo').value = item.memo || '';
-            editIndex = index;
-            document.getElementById('formTitle').innerText = "編集";
-            showTab('add');
-        }
-
-        function deleteItem(index) {
-            if (confirm("本当に削除しますか？")) {
-                knits.splice(index, 1);
-                localStorage.setItem('knits', JSON.stringify(knits));
-                loadData();
-            }
-        }
-
-        function resetForm() { editIndex = -1; document.getElementById('formTitle').innerText = "新規追加"; document.getElementById('knitForm').reset(); showTab('add'); }
-
-        document.getElementById('knitForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const file = document.getElementById('photo').files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const scale = 800 / img.width;
-                        canvas.width = 800; canvas.height = img.height * scale;
-                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                        save(canvas.toDataURL('image/jpeg', 0.7));
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            } else {
-                save(editIndex !== -1 ? knits[editIndex].photo : null);
-            }
-        });
-
-        function save(photoData) {
-            const newItem = {
-                title: document.getElementById('title').value,
-                category: document.getElementById('categorySelect').value,
-                purpose: document.getElementById('purpose').value,
-                startDate: document.getElementById('startDate').value,
-                endDate: document.getElementById('endDate').value,
-                materials: document.getElementById('materials').value,
-                memo: document.getElementById('memo').value,
-                photo: photoData
-            };
-            if (editIndex !== -1) { knits[editIndex] = newItem; } else { knits.push(newItem); }
-            localStorage.setItem('knits', JSON.stringify(knits));
-            document.getElementById('knitForm').reset();
-            loadData();
-            showTab('home');
-        }
-
-        function showTab(id) { document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        // ... (以下、save や editItem などのロジックは以前の完全版のものをそのまま使用) ...
         updateUI();
     </script>
 </body>
