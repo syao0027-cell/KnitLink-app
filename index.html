@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>編み物記録</title>
+    <title>編み物記録 - 完全統合版</title>
     <style>
         body { margin: 0; font-family: sans-serif; background: #f4f4f9; padding-bottom: 80px; }
         .tab-content { display: none; padding: 20px; }
@@ -34,8 +34,8 @@
         <form id="knitForm">
             <input type="text" id="title" placeholder="作品名" required>
             <select id="categorySelect"></select>
-            <input type="text" id="purpose" placeholder="目的（誰に渡すか等）">
-            <input type="text" id="materials" placeholder="使用した材料">
+            <input type="text" id="purpose" placeholder="目的">
+            <input type="text" id="materials" placeholder="材料">
             <label>開始日</label><input type="date" id="startDate" required>
             <label>完了日（未入力なら制作中）</label><input type="date" id="endDate">
             <input type="file" id="photo" accept="image/*">
@@ -46,7 +46,7 @@
     </section>
 
     <section id="config" class="tab-content">
-        <h2>カテゴリー設定</h2>
+        <h2>設定・カテゴリー管理</h2>
         <input type="text" id="newCat" placeholder="新しいカテゴリー名">
         <button class="btn" style="background:#007bff;" onclick="addCategory()">追加</button>
         <div id="catList" style="margin-top:20px;"></div>
@@ -58,30 +58,20 @@
         let categories = JSON.parse(localStorage.getItem('categories') || '["未分類", "小物", "ウェア"]');
         let editIndex = -1;
 
+        function showTab(id) {
+            document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function prepareAdd() { editIndex = -1; document.getElementById('knitForm').reset(); document.getElementById('formTitle').innerText = "新規追加"; showTab('add'); }
+
         function updateUI() {
-            const options = ['全カテゴリー', ...categories].map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('filterCategory').innerHTML = options;
+            document.getElementById('filterCategory').innerHTML = ['全カテゴリー', ...categories].map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('categorySelect').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
             document.getElementById('catList').innerHTML = categories.map((c, i) => `
                 <div style="display:flex; justify-content:space-between; margin-bottom:10px;">${c}
                 ${i>0 ? `<button onclick="deleteCategory(${i})">削除</button>` : ''}</div>`).join('');
             loadData();
-        }
-
-        function prepareAdd() { editIndex = -1; document.getElementById('knitForm').reset(); document.getElementById('formTitle').innerText = "新規追加"; showTab('add'); }
-        
-        function editItem(index) {
-            editIndex = index;
-            const k = knits[index];
-            document.getElementById('title').value = k.title;
-            document.getElementById('categorySelect').value = k.category;
-            document.getElementById('purpose').value = k.purpose;
-            document.getElementById('materials').value = k.materials;
-            document.getElementById('startDate').value = k.startDate;
-            document.getElementById('endDate').value = k.endDate;
-            document.getElementById('memo').value = k.memo;
-            document.getElementById('formTitle').innerText = "編集";
-            showTab('add');
         }
 
         document.getElementById('knitForm').addEventListener('submit', (e) => {
@@ -109,4 +99,65 @@
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const scale =
+                        const scale = 800 / img.width;
+                        canvas.width = 800; canvas.height = img.height * scale;
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        save(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else { save(null); }
+        });
+
+        function loadData() {
+            const filter = document.getElementById('filterCategory').value;
+            let filtered = (filter === "全カテゴリー") ? [...knits] : knits.filter(k => k.category === filter);
+            filtered.sort((a, b) => {
+                const aDone = a.endDate && a.endDate.length > 0;
+                const bDone = b.endDate && b.endDate.length > 0;
+                if (aDone !== bDone) return aDone ? 1 : -1;
+                return a.category.localeCompare(b.category);
+            });
+            document.getElementById('list').innerHTML = filtered.map(k => `
+                <div class="card">
+                    <span class="status-tag" style="background:${k.endDate?"#28a745":"#ffc107"}">${k.endDate?"完了":"制作中"}</span>
+                    <h3 style="margin:5px 0;">${k.title}</h3>
+                    <small>カテゴリー: ${k.category}</small><br>
+                    <div style="margin-top:5px; font-size:0.9em;">
+                        <div>目的: ${k.purpose || '-'}</div>
+                        <div>材料: ${k.materials || '-'}</div>
+                        <div>期間: ${k.startDate} ～ ${k.endDate || "..."}</div>
+                    </div>
+                    ${k.image ? `<img src="${k.image}">` : ''}
+                    <button class="btn" style="background:#ffc107; margin-top:15px;" onclick="editItem(${knits.indexOf(k)})">編集</button>
+                </div>`).join('') || '<p>記録がありません</p>';
+        }
+
+        function editItem(index) {
+            editIndex = index;
+            const k = knits[index];
+            document.getElementById('title').value = k.title;
+            document.getElementById('categorySelect').value = k.category;
+            document.getElementById('purpose').value = k.purpose;
+            document.getElementById('materials').value = k.materials;
+            document.getElementById('startDate').value = k.startDate;
+            document.getElementById('endDate').value = k.endDate;
+            document.getElementById('memo').value = k.memo;
+            document.getElementById('formTitle').innerText = "編集";
+            showTab('add');
+        }
+
+        function addCategory() {
+            const val = document.getElementById('newCat').value.trim();
+            if(val && !categories.includes(val)) { categories.push(val); localStorage.setItem('categories', JSON.stringify(categories)); updateUI(); }
+        }
+
+        function deleteCategory(i) {
+            if(confirm("削除しますか？")) { categories.splice(i, 1); localStorage.setItem('categories', JSON.stringify(categories)); updateUI(); }
+        }
+
+        updateUI();
+    </script>
+</body>
+</html>
