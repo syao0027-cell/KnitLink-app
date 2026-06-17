@@ -3,14 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>編み物記録 - 完全版</title>
+    <title>編み物記録</title>
+    
+    <link rel="apple-touch-icon" href="image.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
     <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body { margin: 0; font-family: 'Zen Maru Gothic', sans-serif; background-color: #fdfaf5; color: #5d554d; padding-bottom: 100px; }
         .tab-content { display: none; padding: 20px; }
         .tab-content.active { display: block; }
         
-        /* カードデザイン（写真サイズを小さく） */
         .card { background: #ffffff; margin: 10px 0; padding: 10px; border-radius: 15px; border: 1px solid #efeae3; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
         .card img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; margin-right: 12px; }
         .details { display: none; background: #fffdfa; padding: 15px; border-radius: 0 0 15px 15px; margin: -10px 5px 15px 5px; border: 1px solid #efeae3; border-top: none; }
@@ -106,7 +110,6 @@
 
         function toggleDetails(i) { const el = document.getElementById(`details-${i}`); el.style.display = (el.style.display === 'block') ? 'none' : 'block'; }
         
-        // 保存処理
         document.getElementById('knitForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const file = document.getElementById('photo').files[0];
