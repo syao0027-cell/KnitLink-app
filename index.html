@@ -3,54 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>編み物記録 - 完全統合版</title>
+    <title>編み物記録 - 整理版</title>
     <style>
         body { margin: 0; font-family: sans-serif; background: #f4f4f9; padding-bottom: 80px; }
         .tab-content { display: none; padding: 20px; }
         .tab-content.active { display: block; }
-        .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .card img { width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
-        input, select, textarea { padding: 12px; margin-bottom: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; }
-        .btn { padding: 12px; border: none; border-radius: 8px; color: white; cursor: pointer; width: 100%; }
-        .save-btn { background: #28a745; }
-        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-        .status-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; color: white; margin-bottom: 5px; }
+        .card { background: white; padding: 10px 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; }
+        .details { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid #eee; }
+        .btn { padding: 8px 12px; border: none; border-radius: 5px; cursor: pointer; color: white; }
+        .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; border: none; font-size: 25px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        input, select, textarea { padding: 10px; margin-bottom: 10px; width: 100%; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
     <section id="home" class="tab-content active">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>作品一覧</h2>
+            <h2>作品リスト</h2>
             <button onclick="showTab('config')" style="background:none; border:none; font-size:24px;">⚙️</button>
         </div>
         <select id="filterCategory" onchange="loadData()"><option value="全カテゴリー">全カテゴリー</option></select>
+        
         <div id="list"></div>
         <button class="fab" onclick="prepareAdd()">+</button>
     </section>
 
     <section id="add" class="tab-content">
-        <h2 id="formTitle">新規追加</h2>
+        <h2 id="formTitle">追加・編集</h2>
         <form id="knitForm">
             <input type="text" id="title" placeholder="作品名" required>
             <select id="categorySelect"></select>
             <input type="text" id="purpose" placeholder="目的">
             <input type="text" id="materials" placeholder="材料">
             <label>開始日</label><input type="date" id="startDate" required>
-            <label>完了日（未入力なら制作中）</label><input type="date" id="endDate">
+            <label>完了日</label><input type="date" id="endDate">
             <input type="file" id="photo" accept="image/*">
             <textarea id="memo" placeholder="メモ"></textarea>
-            <button type="submit" class="btn save-btn">保存する</button>
-            <button type="button" class="btn" style="background:#6c757d; margin-top:10px;" onclick="showTab('home')">戻る</button>
+            <button type="submit" class="btn" style="background:#28a745; width:100%;">保存する</button>
+            <button type="button" class="btn" style="background:#6c757d; width:100%; margin-top:10px;" onclick="showTab('home')">戻る</button>
         </form>
     </section>
 
     <section id="config" class="tab-content">
-        <h2>設定・カテゴリー管理</h2>
-        <input type="text" id="newCat" placeholder="新しいカテゴリー名">
+        <h2>カテゴリー設定</h2>
+        <input type="text" id="newCat" placeholder="新規カテゴリー">
         <button class="btn" style="background:#007bff;" onclick="addCategory()">追加</button>
         <div id="catList" style="margin-top:20px;"></div>
-        <button class="btn" style="background:#6c757d; margin-top:20px;" onclick="showTab('home')">一覧に戻る</button>
+        <button class="btn" style="background:#6c757d; margin-top:20px;" onclick="showTab('home')">戻る</button>
     </section>
 
     <script>
@@ -58,106 +58,52 @@
         let categories = JSON.parse(localStorage.getItem('categories') || '["未分類", "小物", "ウェア"]');
         let editIndex = -1;
 
-        function showTab(id) {
-            document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-
-        function prepareAdd() { editIndex = -1; document.getElementById('knitForm').reset(); document.getElementById('formTitle').innerText = "新規追加"; showTab('add'); }
-
-        function updateUI() {
-            document.getElementById('filterCategory').innerHTML = ['全カテゴリー', ...categories].map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('categorySelect').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('catList').innerHTML = categories.map((c, i) => `
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">${c}
-                ${i>0 ? `<button onclick="deleteCategory(${i})">削除</button>` : ''}</div>`).join('');
-            loadData();
-        }
-
-        document.getElementById('knitForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const file = document.getElementById('photo').files[0];
-            const save = (imgData) => {
-                const item = {
-                    title: document.getElementById('title').value,
-                    category: document.getElementById('categorySelect').value,
-                    purpose: document.getElementById('purpose').value,
-                    materials: document.getElementById('materials').value,
-                    startDate: document.getElementById('startDate').value,
-                    endDate: document.getElementById('endDate').value,
-                    memo: document.getElementById('memo').value,
-                    image: imgData || (editIndex !== -1 ? knits[editIndex].image : null)
-                };
-                if (editIndex !== -1) knits[editIndex] = item; else knits.push(item);
-                localStorage.setItem('knits', JSON.stringify(knits));
-                loadData();
-                showTab('home');
-            };
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const scale = 800 / img.width;
-                        canvas.width = 800; canvas.height = img.height * scale;
-                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                        save(canvas.toDataURL('image/jpeg', 0.7));
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            } else { save(null); }
-        });
-
         function loadData() {
             const filter = document.getElementById('filterCategory').value;
             let filtered = (filter === "全カテゴリー") ? [...knits] : knits.filter(k => k.category === filter);
-            filtered.sort((a, b) => {
-                const aDone = a.endDate && a.endDate.length > 0;
-                const bDone = b.endDate && b.endDate.length > 0;
-                if (aDone !== bDone) return aDone ? 1 : -1;
-                return a.category.localeCompare(b.category);
-            });
-            document.getElementById('list').innerHTML = filtered.map(k => `
+            
+            // 制作中(endDate空)を上に
+            filtered.sort((a,b) => (a.endDate ? 1 : -1));
+
+            const listDiv = document.getElementById('list');
+            listDiv.innerHTML = filtered.map((k, i) => {
+                const idx = knits.indexOf(k);
+                return `
                 <div class="card">
-                    <span class="status-tag" style="background:${k.endDate?"#28a745":"#ffc107"}">${k.endDate?"完了":"制作中"}</span>
-                    <h3 style="margin:5px 0;">${k.title}</h3>
-                    <small>カテゴリー: ${k.category}</small><br>
-                    <div style="margin-top:5px; font-size:0.9em;">
-                        <div>目的: ${k.purpose || '-'}</div>
-                        <div>材料: ${k.materials || '-'}</div>
-                        <div>期間: ${k.startDate} ～ ${k.endDate || "..."}</div>
+                    <div class="card-header">
+                        <strong>${k.title}</strong>
+                        <button class="btn" style="background:#007bff;" onclick="toggleDetails(${i})">詳細</button>
                     </div>
-                    ${k.image ? `<img src="${k.image}">` : ''}
-                    <button class="btn" style="background:#ffc107; margin-top:15px;" onclick="editItem(${knits.indexOf(k)})">編集</button>
-                </div>`).join('') || '<p>記録がありません</p>';
+                    <div id="details-${i}" class="details">
+                        <p>カテゴリー: ${k.category}<br>目的: ${k.purpose}<br>材料: ${k.materials}<br>期間: ${k.startDate} ～ ${k.endDate || "..."}</p>
+                        ${k.image ? `<img src="${k.image}" style="width:100px;">` : ''}
+                        <button class="btn" style="background:#ffc107; margin-top:10px;" onclick="editItem(${idx})">編集</button>
+                    </div>
+                </div>`;
+            }).join('');
         }
 
-        function editItem(index) {
-            editIndex = index;
-            const k = knits[index];
-            document.getElementById('title').value = k.title;
-            document.getElementById('categorySelect').value = k.category;
-            document.getElementById('purpose').value = k.purpose;
-            document.getElementById('materials').value = k.materials;
-            document.getElementById('startDate').value = k.startDate;
-            document.getElementById('endDate').value = k.endDate;
-            document.getElementById('memo').value = k.memo;
-            document.getElementById('formTitle').innerText = "編集";
-            showTab('add');
+        function toggleDetails(i) {
+            const el = document.getElementById(`details-${i}`);
+            el.style.display = (el.style.display === 'block') ? 'none' : 'block';
         }
 
-        function addCategory() {
-            const val = document.getElementById('newCat').value.trim();
-            if(val && !categories.includes(val)) { categories.push(val); localStorage.setItem('categories', JSON.stringify(categories)); updateUI(); }
-        }
+        // --- 以下、既存の保存・編集ロジック ---
+        function prepareAdd() { editIndex = -1; document.getElementById('knitForm').reset(); showTab('add'); }
+        function editItem(i) { editIndex = i; const k = knits[i]; document.getElementById('title').value=k.title; document.getElementById('categorySelect').value=k.category; document.getElementById('purpose').value=k.purpose; document.getElementById('materials').value=k.materials; document.getElementById('startDate').value=k.startDate; document.getElementById('endDate').value=k.endDate; document.getElementById('memo').value=k.memo; showTab('add'); }
+        
+        document.getElementById('knitForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const item = { title:document.getElementById('title').value, category:document.getElementById('categorySelect').value, purpose:document.getElementById('purpose').value, materials:document.getElementById('materials').value, startDate:document.getElementById('startDate').value, endDate:document.getElementById('endDate').value, memo:document.getElementById('memo').value, image: knits[editIndex]?.image || null };
+            if(editIndex !== -1) knits[editIndex] = item; else knits.push(item);
+            localStorage.setItem('knits', JSON.stringify(knits));
+            showTab('home'); loadData();
+        });
 
-        function deleteCategory(i) {
-            if(confirm("削除しますか？")) { categories.splice(i, 1); localStorage.setItem('categories', JSON.stringify(categories)); updateUI(); }
-        }
-
-        updateUI();
+        function showTab(id) { document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+        document.getElementById('categorySelect').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('filterCategory').innerHTML = ['全カテゴリー', ...categories].map(c => `<option value="${c}">${c}</option>`).join('');
+        loadData();
     </script>
 </body>
 </html>
