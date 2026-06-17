@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>編み物記録 - 改良版</title>
+    <title>編み物記録</title>
     <style>
         body { margin: 0; font-family: sans-serif; background: #f4f4f9; padding-bottom: 80px; }
         .tab-content { display: none; padding: 20px; }
@@ -11,76 +11,97 @@
         .card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .card img { width: 100%; height: auto; border-radius: 8px; margin-top: 10px; }
         input, select, textarea { padding: 12px; margin-bottom: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 8px; }
-        .btn { padding: 12px; border: none; border-radius: 8px; color: white; cursor: pointer; }
-        .save-btn { background: #28a745; width: 100%; }
+        .btn { padding: 12px; border: none; border-radius: 8px; color: white; cursor: pointer; width: 100%; }
+        .save-btn { background: #28a745; }
         .fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: #007bff; color: white; border-radius: 50%; font-size: 30px; border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .status-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; color: white; margin-bottom: 5px; }
     </style>
 </head>
 <body>
 
     <section id="home" class="tab-content active">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-            <h2>作品一覧</h2>
-            <button onclick="showTab('config')">⚙️</button>
-        </div>
-        <select id="filterCategory" onchange="loadData()">
-            <option value="全カテゴリー">全カテゴリー</option>
-        </select>
+        <h2>作品一覧</h2>
+        <select id="filterCategory" onchange="loadData()"><option value="全カテゴリー">全カテゴリー</option></select>
         <div id="list"></div>
-        <button class="fab" onclick="resetForm()">+</button>
+        <button class="fab" onclick="showTab('add')">+</button>
     </section>
 
     <section id="add" class="tab-content">
-        <h2 id="formTitle">新規追加</h2>
+        <h2>新規追加</h2>
         <form id="knitForm">
             <input type="text" id="title" placeholder="作品名" required>
             <select id="categorySelect"></select>
-            <input type="date" id="startDate" required>
+            <input type="text" id="purpose" placeholder="目的（誰に渡すか等）">
+            <input type="text" id="materials" placeholder="使用した材料">
+            <label>開始日</label><input type="date" id="startDate" required>
+            <label>完了日（未入力なら制作中）</label><input type="date" id="endDate">
+            <input type="file" id="photo" accept="image/*">
             <textarea id="memo" placeholder="メモ"></textarea>
             <button type="submit" class="btn save-btn">保存する</button>
-            <button type="button" class="btn" style="background:#6c757d; width:100%; margin-top:10px;" onclick="showTab('home')">戻る</button>
+            <button type="button" class="btn" style="background:#6c757d; margin-top:10px;" onclick="showTab('home')">戻る</button>
         </form>
-    </section>
-
-    <section id="config" class="tab-content">
-        <h2>設定</h2>
-        <button class="btn" style="background:#17a2b8; width:100%;" onclick="exportCSV()">データをCSVで保存</button>
-        <button class="btn" style="background:#6c757d; width:100%; margin-top:20px;" onclick="showTab('home')">一覧に戻る</button>
     </section>
 
     <script>
         let knits = JSON.parse(localStorage.getItem('knits') || '[]');
         let categories = JSON.parse(localStorage.getItem('categories') || '["未分類", "小物", "ウェア"]');
 
-        function updateUI() {
-            // カテゴリー選択肢を更新
-            const options = ['全カテゴリー', ...categories].map(c => `<option value="${c}">${c}</option>`).join('');
-            document.getElementById('filterCategory').innerHTML = options;
-            document.getElementById('categorySelect').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
-            loadData();
-        }
+        document.getElementById('knitForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const file = document.getElementById('photo').files[0];
+            const save = (imgData) => {
+                knits.push({
+                    title: document.getElementById('title').value,
+                    category: document.getElementById('categorySelect').value,
+                    purpose: document.getElementById('purpose').value,
+                    materials: document.getElementById('materials').value,
+                    startDate: document.getElementById('startDate').value,
+                    endDate: document.getElementById('endDate').value,
+                    memo: document.getElementById('memo').value,
+                    image: imgData
+                });
+                localStorage.setItem('knits', JSON.stringify(knits));
+                document.getElementById('knitForm').reset();
+                loadData();
+                showTab('home');
+            };
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const scale = 800 / img.width;
+                        canvas.width = 800; canvas.height = img.height * scale;
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        save(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else { save(null); }
+        });
 
         function loadData() {
             const filter = document.getElementById('filterCategory').value;
-            const listDiv = document.getElementById('list');
-            let html = "";
-            
-            // 絞り込み判定
             const filtered = (filter === "全カテゴリー") ? knits : knits.filter(k => k.category === filter);
             
-            filtered.forEach((item, index) => {
-                html += `<div class="card"><strong>${item.title}</strong><br><small>${item.category}</small></div>`;
-            });
-            listDiv.innerHTML = html || '<p>記録がありません</p>';
-        }
-
-        function exportCSV() {
-            let csv = "作品名,カテゴリー,開始日,メモ\n";
-            knits.forEach(k => { csv += `"${k.title}","${k.category}","${k.startDate}","${k.memo}"\n`; });
-            const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url; a.download = "knits_backup.csv"; a.click();
+            document.getElementById('list').innerHTML = filtered.map(k => {
+                const isCompleted = k.endDate !== "";
+                const statusColor = isCompleted ? "#28a745" : "#ffc107";
+                return `
+                <div class="card">
+                    <span class="status-tag" style="background:${statusColor}">${isCompleted ? "完了" : "制作中"}</span>
+                    <strong>${k.title}</strong><br>
+                    <small>カテゴリー: ${k.category}</small><br>
+                    <small>目的: ${k.purpose}</small><br>
+                    <small>材料: ${k.materials}</small><br>
+                    <small>期間: ${k.startDate} ～ ${isCompleted ? k.endDate : "…"}</small><br>
+                    ${k.image ? `<img src="${k.image}">` : ''}
+                    <p style="font-size:0.9em; margin-top:5px;">${k.memo}</p>
+                </div>`;
+            }).join('') || '<p>記録がありません</p>';
         }
 
         function showTab(id) {
@@ -88,9 +109,9 @@
             document.getElementById(id).classList.add('active');
         }
 
-        function resetForm() { showTab('add'); }
-
-        updateUI();
+        document.getElementById('categorySelect').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('filterCategory').innerHTML = ['全カテゴリー', ...categories].map(c => `<option value="${c}">${c}</option>`).join('');
+        loadData();
     </script>
 </body>
 </html>
