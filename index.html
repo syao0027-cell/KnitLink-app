@@ -78,15 +78,16 @@
                 const idx = knits.indexOf(k);
                 const html = `
                 <div class="card">
-                    <div class="card-header">
+                    ${k.image ? `<img src="${k.image}">` : ''}
+                    <div style="flex-grow:1;">
                         <strong>${k.title}</strong>
-                        <button class="btn" style="background:#007bff;" onclick="toggleDetails(${idx})">詳細</button>
+                        <div style="font-size: 0.8em; color: #777;">${k.category}</div>
                     </div>
-                    <div id="details-${idx}" class="details">
-                        <p>カテゴリー: ${k.category}<br>目的: ${k.purpose}<br>材料: ${k.materials}<br>期間: ${k.startDate} ～ ${k.endDate || "..."}</p>
-                        ${k.image ? `<img src="${k.image}" style="width:100px;">` : ''}
-                        <button class="btn" style="background:#ffc107; margin-top:10px;" onclick="editItem(${idx})">編集</button>
-                    </div>
+                    <button class="btn" onclick="toggleDetails(${idx})">詳細</button>
+                </div>
+                <div id="details-${idx}" class="details" style="margin: -10px 20px 10px 20px; padding: 10px; background: #fffdfa; border-radius: 0 0 10px 10px;">
+                    <p>目的: ${k.purpose}<br>材料: ${k.materials}<br>期間: ${k.startDate} ～ ${k.endDate || "..."}</p>
+                    <button class="btn" style="background:#ffc107;" onclick="editItem(${idx})">編集</button>
                 </div>`;
 
                 if (!k.endDate || k.endDate === "") {

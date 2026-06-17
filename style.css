@@ -1,13 +1,51 @@
-body { margin: 0; padding-bottom: 60px; font-family: sans-serif; }
-.tab-content { display: none; padding: 20px; }
-.tab-content.active { display: block; }
-
-.bottom-nav {
-    position: fixed; bottom: 0; width: 100%; height: 60px;
-    display: flex; justify-content: space-around;
-    background: #f8f8f8; border-top: 1px solid #ddd;
+/* --- 全体デザイン --- */
+body { 
+    margin: 0; 
+    font-family: 'Helvetica Neue', Arial, sans-serif; 
+    background-color: #fdfaf5; /* 和紙のような温かい白 */
+    color: #4a403a; 
 }
-.bottom-nav button { flex: 1; border: none; background: none; }
 
-form { display: flex; flex-direction: column; gap: 10px; }
-input { padding: 10px; font-size: 16px; }
+/* --- カードデザインを「編み物風」に --- */
+.card { 
+    background: white; 
+    padding: 15px; 
+    margin: 15px 20px; 
+    border-radius: 15px; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+    border: 1px solid #efeae3;
+    display: flex;
+    align-items: center;
+}
+
+/* 画像を丸く小さく */
+.card img {
+    width: 70px; height: 70px;
+    border-radius: 10px;
+    object-fit: cover;
+    margin-right: 15px;
+}
+
+/* --- ボタンのスタイルを統一 --- */
+.btn { 
+    background: #6a9ac2; /* 落ち着いた青 */
+    color: white;
+    border-radius: 20px; 
+    padding: 8px 16px;
+    font-weight: bold;
+}
+
+/* --- FAB（右下＋ボタン）の装飾 --- */
+.fab { 
+    background: #4a90e2; 
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+    font-size: 30px;
+}
+
+/* --- セクションタイトルの装飾 --- */
+.section-title { 
+    border-left: none; 
+    padding-left: 20px;
+    font-size: 1.2em;
+    color: #8b796d;
+}
