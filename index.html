@@ -20,14 +20,17 @@
 <body>
 
     <section id="home" class="tab-content active">
-        <h2>作品一覧</h2>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h2>作品一覧</h2>
+            <button onclick="showTab('config')" style="background:none; border:none; font-size:24px;">⚙️</button>
+        </div>
         <select id="filterCategory" onchange="loadData()"><option value="全カテゴリー">全カテゴリー</option></select>
         <div id="list"></div>
-        <button class="fab" onclick="showTab('add')">+</button>
+        <button class="fab" onclick="prepareAdd()">+</button>
     </section>
 
     <section id="add" class="tab-content">
-        <h2>新規追加</h2>
+        <h2 id="formTitle">新規追加</h2>
         <form id="knitForm">
             <input type="text" id="title" placeholder="作品名" required>
             <select id="categorySelect"></select>
@@ -42,15 +45,50 @@
         </form>
     </section>
 
+    <section id="config" class="tab-content">
+        <h2>カテゴリー設定</h2>
+        <input type="text" id="newCat" placeholder="新しいカテゴリー名">
+        <button class="btn" style="background:#007bff;" onclick="addCategory()">追加</button>
+        <div id="catList" style="margin-top:20px;"></div>
+        <button class="btn" style="background:#6c757d; margin-top:20px;" onclick="showTab('home')">一覧に戻る</button>
+    </section>
+
     <script>
         let knits = JSON.parse(localStorage.getItem('knits') || '[]');
         let categories = JSON.parse(localStorage.getItem('categories') || '["未分類", "小物", "ウェア"]');
+        let editIndex = -1;
+
+        function updateUI() {
+            const options = ['全カテゴリー', ...categories].map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('filterCategory').innerHTML = options;
+            document.getElementById('categorySelect').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('catList').innerHTML = categories.map((c, i) => `
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">${c}
+                ${i>0 ? `<button onclick="deleteCategory(${i})">削除</button>` : ''}</div>`).join('');
+            loadData();
+        }
+
+        function prepareAdd() { editIndex = -1; document.getElementById('knitForm').reset(); document.getElementById('formTitle').innerText = "新規追加"; showTab('add'); }
+        
+        function editItem(index) {
+            editIndex = index;
+            const k = knits[index];
+            document.getElementById('title').value = k.title;
+            document.getElementById('categorySelect').value = k.category;
+            document.getElementById('purpose').value = k.purpose;
+            document.getElementById('materials').value = k.materials;
+            document.getElementById('startDate').value = k.startDate;
+            document.getElementById('endDate').value = k.endDate;
+            document.getElementById('memo').value = k.memo;
+            document.getElementById('formTitle').innerText = "編集";
+            showTab('add');
+        }
 
         document.getElementById('knitForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const file = document.getElementById('photo').files[0];
             const save = (imgData) => {
-                knits.push({
+                const item = {
                     title: document.getElementById('title').value,
                     category: document.getElementById('categorySelect').value,
                     purpose: document.getElementById('purpose').value,
@@ -58,60 +96,17 @@
                     startDate: document.getElementById('startDate').value,
                     endDate: document.getElementById('endDate').value,
                     memo: document.getElementById('memo').value,
-                    image: imgData
-                });
+                    image: imgData || (editIndex !== -1 ? knits[editIndex].image : null)
+                };
+                if (editIndex !== -1) knits[editIndex] = item; else knits.push(item);
                 localStorage.setItem('knits', JSON.stringify(knits));
-                document.getElementById('knitForm').reset();
                 loadData();
                 showTab('home');
             };
-
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const scale = 800 / img.width;
-                        canvas.width = 800; canvas.height = img.height * scale;
-                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-                        save(canvas.toDataURL('image/jpeg', 0.7));
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            } else { save(null); }
-        });
-
-        function loadData() {
-            const filter = document.getElementById('filterCategory').value;
-            const filtered = (filter === "全カテゴリー") ? knits : knits.filter(k => k.category === filter);
-            
-            document.getElementById('list').innerHTML = filtered.map(k => {
-                const isCompleted = k.endDate !== "";
-                const statusColor = isCompleted ? "#28a745" : "#ffc107";
-                return `
-                <div class="card">
-                    <span class="status-tag" style="background:${statusColor}">${isCompleted ? "完了" : "制作中"}</span>
-                    <strong>${k.title}</strong><br>
-                    <small>カテゴリー: ${k.category}</small><br>
-                    <small>目的: ${k.purpose}</small><br>
-                    <small>材料: ${k.materials}</small><br>
-                    <small>期間: ${k.startDate} ～ ${isCompleted ? k.endDate : "…"}</small><br>
-                    ${k.image ? `<img src="${k.image}">` : ''}
-                    <p style="font-size:0.9em; margin-top:5px;">${k.memo}</p>
-                </div>`;
-            }).join('') || '<p>記録がありません</p>';
-        }
-
-        function showTab(id) {
-            document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-        }
-
-        document.getElementById('categorySelect').innerHTML = categories.map(c => `<option value="${c}">${c}</option>`).join('');
-        document.getElementById('filterCategory').innerHTML = ['全カテゴリー', ...categories].map(c => `<option value="${c}">${c}</option>`).join('');
-        loadData();
-    </script>
-</body>
-</html>
+                        const scale =
